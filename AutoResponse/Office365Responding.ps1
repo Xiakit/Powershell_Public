@@ -1,4 +1,3 @@
-Start-Transcript -Path "$PSScriptRoot\Respond.log"
 <#
 Prerequisites:
 -Microsoft Exchange Web Services Managed API 2.2
@@ -9,16 +8,21 @@ Credits to http://www.garrettpatterson.com/2014/04/18/checkread-messages-exchang
 Donwload DLL from here https://www.microsoft.com/en-us/download/details.aspx?id=42951
 #>
 
+Start-Transcript -Path "$PSScriptRoot\Transcript.log"
+$Workfolder = $PSScriptRoot
 #Configuration
-
 #Configuration to log in
 $MyMail = ""                #Adress used in Office365
 $Domain = ""                #Domain name used for the authentication process in office 365 "mycompany.com" for example
 $DayName = "Friday"         #On what days should the script run
 $CheckEverXMinutes = 5      #Interval to check for new messages
+
 #To save your password secure in a file
-#Read-Host -AsSecureString | ConvertFrom-SecureString | Out-File -Path C:\Jobs\cred.txt
-$Password = get-content -Path "C:\Jobs\cred.txt" | ConvertTo-SecureString
+if(!(Test-Path $PSScriptRoot\cred.txt)){
+    Read-Host -AsSecureString -Prompt "Type your Password" | ConvertFrom-SecureString | Out-File -FilePath "$Workfolder\cred.txt" -Force
+}
+
+$Password = Get-Content -Path "$PSScriptRoot\cred.txt" | ConvertTo-SecureString
 
 #Configuration to send messages
 $From = "" #The adress the mail will be sent from, if possible use the same domain in the adress as the smtpserver in order to avoid the junk folder :)
@@ -66,7 +70,7 @@ if ((get-date).DayOfWeek -notlike "*$Dayname*") {
     Write-Host "It is not $Dayname, you need to define $((get-date).DayOfWeek) in the script in order to auto respond today."
 }
 else {
-    $SentMailsLog = "C:\Jobs\Sentmails.log"
+    $SentMailsLog = "$Psscriptroot\Sentmails.log"
     Remove-Item -Path $SentMailsLog -Force -ErrorAction SilentlyContinue
 
     while ((get-date).DayOfWeek -like "$DayName") {
