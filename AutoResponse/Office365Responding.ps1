@@ -9,26 +9,27 @@ Donwload DLL from here https://www.microsoft.com/en-us/download/details.aspx?id=
 #>
 
 Start-Transcript -Path "$PSScriptRoot\Transcript.log"
+#Loading the config
+Get-Content "$PSScriptRoot\Settings.txt" | foreach-object -begin { $config=@{}} -process { $k = [regex]::split($_,'='); if(($k[0].CompareTo("") -ne 0) -and ($k[0].StartsWith("[") -ne $True)) { $config.Add($k[0], $k[1]) } }
 $Workfolder = $PSScriptRoot
 #Configuration
 #Configuration to log in
-$MyMail = ""                #Adress used in Office365
-$Domain = ""                #Domain name used for the authentication process in office 365 "mycompany.com" for example
-$DayName = "Friday"         #On what days should the script run
-$CheckEverXMinutes = 5      #Interval to check for new messages
+$MyMail = $config.MyMail         #Adress used in Office365
+$Domain = $config.Domain               #Domain name used for the authentication process in office 365 "mycompany.com" for example
+$DayAbsent = $config.DayAbsent         #On what days should the script run
+$CheckEverXMinutes = [int]$config.CheckEverXMinutes     #Interval to check for new messages
 
 #To save your password secure in a file
 if(!(Test-Path $PSScriptRoot\cred.txt)){
     Read-Host -AsSecureString -Prompt "Type your Password" | ConvertFrom-SecureString | Out-File -FilePath "$Workfolder\cred.txt" -Force
 }
-
 $Password = Get-Content -Path "$PSScriptRoot\cred.txt" | ConvertTo-SecureString
 
 #Configuration to send messages
-$From = "" #The adress the mail will be sent from, if possible use the same domain in the adress as the smtpserver in order to avoid the junk folder :)
-$SmtpServer = ""
-$Subject = "Out of Office"
-$MyOutOfOfficeMessage = "Freitags jeweils nicht im Office."
+$From = $config.From #The adress the mail will be sent from, if possible use the same domain in the adress as the smtpserver in order to avoid the junk folder :)
+$SmtpServer = $config.SmtpServer
+$Subject = $config.Subject
+$MyOutOfOfficeMessage = $config.MyOutOfOfficeMessage
 
 <#
     Example using GMX as SMTP
@@ -66,14 +67,14 @@ if (!(Test-Path -Path "C:\Program Files\Microsoft\Exchange\Web Services\2.2\Micr
     throw "The Required Web Services Managed API 2.2 is not available, please download and install it. Download it at https://www.microsoft.com/en-us/download/details.aspx?id=42951"
 }
 
-if ((get-date).DayOfWeek -notlike "*$Dayname*") {
-    Write-Host "It is not $Dayname, you need to define $((get-date).DayOfWeek) in the script in order to auto respond today."
+if ((get-date).DayOfWeek -notlike "*$DayAbsent*") {
+    Write-Host "It is not $DayAbsent, you need to define $((get-date).DayOfWeek) in the script in order to auto respond today."
 }
 else {
     $SentMailsLog = "$Psscriptroot\Sentmails.log"
     Remove-Item -Path $SentMailsLog -Force -ErrorAction SilentlyContinue
 
-    while ((get-date).DayOfWeek -like "$DayName") {
+    while ((get-date).DayOfWeek -like "$DayAbsent") {
         $SenderList = Get-Office365Senders -O365Mail $MyMail -Password $Password -Domain $Domain
         foreach ($Line in $SenderList) {
             $To = $Line
