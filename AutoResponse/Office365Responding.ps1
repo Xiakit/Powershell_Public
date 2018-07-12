@@ -16,7 +16,45 @@ Credits to https://sysadminben.wordpress.com/2015/10/27/reading-emails-from-offi
 Credits to http://www.garrettpatterson.com/2014/04/18/checkread-messages-exchangeoffice365-inbox-with-powershell/
 Donwload DLL from here https://www.microsoft.com/en-us/download/details.aspx?id=42951
 #>
-$Workfolder = $PSScriptRoot
+function Get-Office365Senders($O365Mail, [securestring]$Password, $Domain){
+    $SenderList = New-object System.Collections.ArrayList
+    [Reflection.Assembly]::LoadFile( "C:\Program Files\Microsoft\Exchange\Web Services\2.2\Microsoft.Exchange.WebServices.dll") | Out-Null
+    $s = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService([Microsoft.Exchange.WebServices.Data.ExchangeVersion]::Exchange2013_SP1)
+    $s.Credentials = New-Object Net.NetworkCredential($O365Mail, $Password, $Domain)
+    $s.Url = new-object Uri("https://outlook.office365.com/EWS/Exchange.asmx");
+    $inbox = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($s,[Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox)
+    $iv = new-object Microsoft.Exchange.WebServices.Data.ItemView(50)
+    $inboxfilter = new-object Microsoft.Exchange.WebServices.Data.SearchFilter+SearchFilterCollection([Microsoft.Exchange.WebServices.Data.LogicalOperator]::And)
+    $ifisread = new-object Microsoft.Exchange.WebServices.Data.SearchFilter+IsEqualTo([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::IsRead,$false)
+    $inboxfilter.add($ifisread)
+    $msgs = $s.FindItems($inbox.Id, $inboxfilter, $iv) | Select-Object -Property Sender
+    foreach($sender in $msgs){
+        $SenderList.Add([string]$sender.Sender.Address) | Out-Null
+    }
+    return $SenderList
+}
+
+Function Get-ConfigurationFromFile{
+    Param
+    (
+        # Param1 help description
+        [Parameter(Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0)]
+        $FilePath
+    )
+    $ConfigContent = Get-Content $FilePath
+    $Config = @{}
+    foreach ($Line in $ConfigContent) {
+        $Line = [regex]::Split($Line, "=")
+        if (($Line[0].CompareTo("") -ne 0) -and ($Line[0].StartsWith("[") -ne $True)) {
+            $Config.Add($Line[0], $Line[1])
+        }
+    }
+    return $Config
+}
+
+$Workfolder = $PSScriptRoot #can either be set to the current directory $psscriptroot or to a directory of your choice.
 
 #Creating config
 if(!(Test-Path "$Workfolder\Settings.txt")){
@@ -50,15 +88,7 @@ Debugging=False
     Exit
 }
 
-#Loading the config
-$ConfigContent = Get-Content "$Workfolder\Settings.txt"
-$Config = @{}
-foreach($Line in $ConfigContent){
-  $Line = [regex]::Split($Line,"=")
-  if(($Line[0].CompareTo("") -ne 0) -and ($Line[0].StartsWith("[") -ne $True)){
-      $Config.Add($Line[0], $Line[1])
-  }
-}
+$Config = Get-ConfigurationFromFile -FilePath "$Workfolder\Settings.txt"
 
 #Configuration
 $MyMail = $config.MyMail               #Adress used in Office365
@@ -103,24 +133,6 @@ foreach($param in $ParamsSendmail.GetEnumerator()){
         Write-Host $param.Name
         $ParamsSendmail.Remove($param.Name)
     }
-}
-
-function Get-Office365Senders($O365Mail, [securestring]$Password, $Domain){
-    $SenderList = New-object System.Collections.ArrayList
-    [Reflection.Assembly]::LoadFile( "C:\Program Files\Microsoft\Exchange\Web Services\2.2\Microsoft.Exchange.WebServices.dll") | Out-Null
-    $s = New-Object Microsoft.Exchange.WebServices.Data.ExchangeService([Microsoft.Exchange.WebServices.Data.ExchangeVersion]::Exchange2013_SP1)
-    $s.Credentials = New-Object Net.NetworkCredential($O365Mail, $Password, $Domain)
-    $s.Url = new-object Uri("https://outlook.office365.com/EWS/Exchange.asmx");
-    $inbox = [Microsoft.Exchange.WebServices.Data.Folder]::Bind($s,[Microsoft.Exchange.WebServices.Data.WellKnownFolderName]::Inbox)
-    $iv = new-object Microsoft.Exchange.WebServices.Data.ItemView(50)
-    $inboxfilter = new-object Microsoft.Exchange.WebServices.Data.SearchFilter+SearchFilterCollection([Microsoft.Exchange.WebServices.Data.LogicalOperator]::And)
-    $ifisread = new-object Microsoft.Exchange.WebServices.Data.SearchFilter+IsEqualTo([Microsoft.Exchange.WebServices.Data.EmailMessageSchema]::IsRead,$false)
-    $inboxfilter.add($ifisread)
-    $msgs = $s.FindItems($inbox.Id, $inboxfilter, $iv) | Select-Object -Property Sender
-    foreach($sender in $msgs){
-        $SenderList.Add([string]$sender.Sender.Address) | Out-Null
-    }
-    return $SenderList
 }
 
 if (!(Test-Path -Path "C:\Program Files\Microsoft\Exchange\Web Services\2.2\Microsoft.Exchange.WebServices.dll")){
