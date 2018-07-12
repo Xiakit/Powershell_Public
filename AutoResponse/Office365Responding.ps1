@@ -54,7 +54,30 @@ Function Get-ConfigurationFromFile{
     return $Config
 }
 
-$Workfolder = $PSScriptRoot #can either be set to the current directory $psscriptroot or to a directory of your choice.
+function Get-Password {
+    Param
+    (
+        [Parameter(Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 0)]
+        $PWFile,
+        [Parameter(Mandatory = $false,
+            ValueFromPipelineByPropertyName = $true,
+            Position = 1)][string]$Prompt = "Type your password"
+
+    )
+
+    if (!(Test-Path $PWFile)) {
+        Write-Host -ForegroundColor Yellow "Password File $PWFile not found, it will be created."
+        Read-Host -AsSecureString -Prompt $Prompt | ConvertFrom-SecureString | Out-File -FilePath "$PWFile" -Force
+    }
+    else {
+        $SecureString = Get-Content -Path $PWFile | ConvertTo-SecureString
+        return $SecureString
+    }
+}
+
+$Workfolder = $PWD #can either be set to the current directory $psscriptroot or to a directory of your choice.
 
 #Creating config
 if(!(Test-Path "$Workfolder\Settings.txt")){
@@ -102,18 +125,11 @@ if(($Debugging -like "True")){
     $DebugPreference = Continue
 }
 
-#To save your password secure in a file
-if(!(Test-Path $Workfolder\cred.txt)){
-    Read-Host -AsSecureString -Prompt "Type your Office365 Password" | ConvertFrom-SecureString | Out-File -FilePath "$Workfolder\cred.txt" -Force
-}
-$Office365Password = Get-Content -Path "$Workfolder\cred.txt" | ConvertTo-SecureString
+$Office365Password = Get-Password -Path "$Workfolder\cred.txt" -Prompt "Type your Office365 Password"
 
 if($config.UseSmtpLogin -like "True"){
-    if(!(Test-Path $Workfolder\smtpcred.txt)){
-        Read-Host -AsSecureString -Prompt "Type your SMTP providers password usually your mail-password" | ConvertFrom-SecureString | Out-File -FilePath "$Workfolder\smtpcred.txt" -Force
-    }
     $SmptUser = $Config.SmtpUser
-    $SmptPassword = Get-Content $Workfolder\smtpcred.txt | ConvertTo-SecureString
+    $SmptPassword = Get-Password -PasswordFile "$Workfolder\smtpcred.txt" -Prompt "Type your SMTP providers password usually your mail-password"
     $Credentials = New-Object -typename System.Management.Automation.PSCredential -argumentlist $SmptUser,$SmptPassword
 }
 
@@ -160,7 +176,7 @@ else {
                 $To | Out-File -Append -FilePath $SentMailsLog -Force
                 Write-Host "$(get-date): Sending mail to $To"
                 $ParamsSendmail.Add("To",$To)
-                Send-MailMessage @ParamsSendmail 
+                Send-MailMessage @ParamsSendmail
             }
         }
         Start-Sleep -Seconds ($CheckEverXMinutes*60)
