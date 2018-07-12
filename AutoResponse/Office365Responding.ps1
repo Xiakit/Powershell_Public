@@ -7,70 +7,94 @@ Credits to https://sysadminben.wordpress.com/2015/10/27/reading-emails-from-offi
 Credits to http://www.garrettpatterson.com/2014/04/18/checkread-messages-exchangeoffice365-inbox-with-powershell/
 Donwload DLL from here https://www.microsoft.com/en-us/download/details.aspx?id=42951
 #>
-$Workfolder = "C:\Users\grossriederp\Documents\Powershell_Public\AutoResponse"
+$Workfolder = $PSScriptRoot
 
 #Creating config
 if(!(Test-Path "$Workfolder\Settings.txt")){
-    $ExampleConfig = "[General]
-MyMail=pascal.grossrieder@learning.ifa.ch
-DayAbsent=Friday
-Domain=ifa.ch
+    $ExampleConfig = "[General settings]
+DayAbsent=Thursday
 CheckEverXMinutes=5
-[SendingMail]
-From=blabla.ch
-SmtpServer=smpt.blabla.ch
+
+[Office365 settings]
+MyMail=pascal.grossrieder@yrbrands.com
+Domain=yrbrands.com
+
+[Mail configuration]
+From=pascal.grossrieder@gmx.net	
 Subject=Out of Office.
-MyOutOfOfficeMessage=Jeweils Freitags nicht im Office.
+Body=Jeweils Freitags nicht im Office.
+
+[SMTP config]
+SmtpServer=smtp.gmx.net
+SmtpUser=pascal.grossrieder@gmx.net
+Port=587
+UseSmtpLogin=True
+UseSSL=True
+
 [Debugging]
-Debugging=False"
+Debugging=False
+
+"
     $ExampleConfig | Out-File -FilePath "$Workfolder\Settings.txt"
     Write-Host "Please check the config file ("$Workfolder\Settings.txt") `r`n and add the needed details, you will be asked for your password when you run this script again." -ForegroundColor Yellow
     Read-Host -Prompt "Press Enter to continue."
+    Exit
 }
 
 #Loading the config
-Get-Content "$Workfolder\Settings.txt" | foreach-object -begin { $config=@{}} -process { $k = [regex]::split($_,'='); if(($k[0].CompareTo("") -ne 0) -and ($k[0].StartsWith("[") -ne $True)) { $config.Add($k[0], $k[1]) } }
+$ConfigContent = Get-Content "$Workfolder\Settings.txt"
+$Config = @{}
+foreach($Line in $ConfigContent){
+  $Line = [regex]::Split($Line,"=")
+  if(($Line[0].CompareTo("") -ne 0) -and ($Line[0].StartsWith("[") -ne $True)){
+      $Config.Add($Line[0], $Line[1])
+  }
+}
 
 #Configuration
-#Configuration to log in
-$MyMail = $config.MyMail         #Adress used in Office365
+$MyMail = $config.MyMail               #Adress used in Office365
 $Domain = $config.Domain               #Domain name used for the authentication process in office 365 "mycompany.com" for example
 $DayAbsent = $config.DayAbsent         #On what days should the script run
 $CheckEverXMinutes = [int]$config.CheckEverXMinutes     #Interval to check for new messages
-$Debugging = [bool]$config.Debugging
+$Debugging = $config.Debugging   #Displays more info
 
-
-if($Debugging){
+if(($Debugging -like "True")){
     Start-Transcript -Path "$Workfolder\Transcript.log"
     $DebugPreference = Continue
 }
 
-
 #To save your password secure in a file
 if(!(Test-Path $Workfolder\cred.txt)){
-    Read-Host -AsSecureString -Prompt "Type your Password" | ConvertFrom-SecureString | Out-File -FilePath "$Workfolder\cred.txt" -Force
+    Read-Host -AsSecureString -Prompt "Type your Office365 Password" | ConvertFrom-SecureString | Out-File -FilePath "$Workfolder\cred.txt" -Force
 }
-$Password = Get-Content -Path "$Workfolder\cred.txt" | ConvertTo-SecureString
+$Office365Password = Get-Content -Path "$Workfolder\cred.txt" | ConvertTo-SecureString
+
+if($config.UseSmtpLogin -like "True"){
+    if(!(Test-Path $Workfolder\smtpcred.txt)){
+        Read-Host -AsSecureString -Prompt "Type your SMTP providers password usually your mail-password" | ConvertFrom-SecureString | Out-File -FilePath "$Workfolder\smtpcred.txt" -Force
+    }
+    $SmptUser = $Config.SmtpUser
+    $SmptPassword = Get-Content $Workfolder\smtpcred.txt | ConvertTo-SecureString
+    $Credentials = New-Object -typename System.Management.Automation.PSCredential -argumentlist $SmptUser,$SmptPassword
+}
 
 #Configuration to send messages
-$From = $config.From #The adress the mail will be sent from, if possible use the same domain in the adress as the smtpserver in order to avoid the junk folder :)
-$SmtpServer = $config.SmtpServer
-$Subject = $config.Subject
-$MyOutOfOfficeMessage = $config.MyOutOfOfficeMessage
-
-<#
-    Example using GMX as SMTP
-    Read-Host -AsSecureString | ConvertFrom-SecureString  #Use this line to save your password to a file
-    $Password = Get-Content C:\temp\cred.txt | ConvertTo-SecureString
-    $Credentials = new-object -typename System.Management.Automation.PSCredential -argumentlist "mymail@gmx.net",$password
-    $Subject = "MySubject"
-    $To = "recipient@mail.ch"
-    $From = "mymail@gmx.net"
-    $MessageBody = "MyMessage"
-    $SMTPServer = "smtp.gmx.net"
-    $SMTPPort = "587"
-    Send-MailMessage -Body "$MessageBody" -To  $To -from $From -subject $Subject -SmtpServer $SMTPServer -Credential $Credentials -Port $SMTPPort -UseSsl
-#>
+$ParamsSendmail = @{
+    From = $config.From
+    SmtpServer = $config.SmtpServer
+    Subject = $config.Subject
+    Body = $config.Body
+    UseSSL = if($config.UseSSL -like "True"){$true}else{$false}
+    Port= [int]$config.Port
+    Credential = $Credentials
+}
+#Removing unused keys and values
+foreach($param in $ParamsSendmail.GetEnumerator()){
+    if($param.Value -eq "" -and $param.Value -ne $true -and $param.Value -ne $false){
+        Write-Host $param.Name
+        $ParamsSendmail.Remove($param.Name)
+    }
+}
 
 function Get-Office365Senders($O365Mail, [securestring]$Password, $Domain){
     $SenderList = New-object System.Collections.ArrayList
@@ -91,7 +115,9 @@ function Get-Office365Senders($O365Mail, [securestring]$Password, $Domain){
 }
 
 if (!(Test-Path -Path "C:\Program Files\Microsoft\Exchange\Web Services\2.2\Microsoft.Exchange.WebServices.dll")){
-    throw "The Required Web Services Managed API 2.2 is not available, please download and install it. Download it at https://www.microsoft.com/en-us/download/details.aspx?id=42951"
+    Write-Host -ForegroundColor Red "The Required Web Services Managed API 2.2 is not available, please download and install it. Download it at https://www.microsoft.com/en-us/download/details.aspx?id=42951"
+    Read-Host "Press enter to continue"
+    Exit
 }
 
 if ((get-date).DayOfWeek -notlike "$DayAbsent") {
@@ -102,7 +128,7 @@ else {
     Remove-Item -Path $SentMailsLog -Force -ErrorAction SilentlyContinue
 
     while ((get-date).DayOfWeek -like "$DayAbsent") {
-        $SenderList = Get-Office365Senders -O365Mail $MyMail -Password $Password -Domain $Domain
+        $SenderList = Get-Office365Senders -O365Mail $MyMail -Password $Office365Password -Domain $Domain
         foreach ($Line in $SenderList) {
             $To = $Line
             if ((get-content $SentMailsLog -erroraction silentlycontinue) -contains $To) {
@@ -112,7 +138,8 @@ else {
             else {
                 $To | Out-File -Append -FilePath $SentMailsLog -Force
                 Write-Host "$(get-date): Sending mail to $To"
-                Send-MailMessage -Body $MyOutOfOfficeMessage  -To  $To -from $From -subject $Subject -SmtpServer $SmtpServer
+                $ParamsSendmail.Add("To",$To)
+                Send-MailMessage @ParamsSendmail 
             }
         }
         Start-Sleep -Seconds ($CheckEverXMinutes*60)
