@@ -21,7 +21,7 @@ $Workfolder = $PSScriptRoot
 #Creating config
 if(!(Test-Path "$Workfolder\Settings.txt")){
     $ExampleConfig = "[General settings]
-DayAbsent=Thursday
+DayAbsent=Friday
 CheckEverXMinutes=5
 
 [Office365 settings]
