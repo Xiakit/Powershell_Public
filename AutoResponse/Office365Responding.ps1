@@ -16,17 +16,17 @@ DayAbsent=Thursday
 CheckEverXMinutes=5
 
 [Office365 settings]
-MyMail=pascal.grossrieder@yrbrands.com
-Domain=yrbrands.com
+MyMail=IFA.Mafia@Domain.com
+Domain=Domain.com
 
 [Mail configuration]
-From=pascal.grossrieder@gmx.net	
+From=IFA.MafiaAbsender@gmx.net
 Subject=Out of Office.
-Body=Jeweils Freitags nicht im Office.
+Body=Jeweils Freitags nicht im Office, Mafia Business.
 
 [SMTP config]
 SmtpServer=smtp.gmx.net
-SmtpUser=pascal.grossrieder@gmx.net
+SmtpUser=IFA.Mafia@gmx.net
 Port=587
 UseSmtpLogin=True
 UseSSL=True
