@@ -103,7 +103,6 @@ UseSSL=True
 
 [Debugging]
 Debugging=False
-
 "
     $ExampleConfig | Out-File -FilePath "$Workfolder\Settings.txt"
     Write-Host "Please check the config file ("$Workfolder\Settings.txt") `r`n and add the needed details, you will be asked for your password when you run this script again." -ForegroundColor Yellow
@@ -127,6 +126,7 @@ if(($Debugging -like "True")){
 
 $Office365Password = Get-Password -Path "$Workfolder\cred.txt" -Prompt "Type your Office365 Password"
 
+#This will only execute if you set your settings file to true
 if($config.UseSmtpLogin -like "True"){
     $SmptUser = $Config.SmtpUser
     $SmptPassword = Get-Password -PasswordFile "$Workfolder\smtpcred.txt" -Prompt "Type your SMTP providers password usually your mail-password"
