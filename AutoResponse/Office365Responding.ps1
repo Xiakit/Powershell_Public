@@ -1,4 +1,12 @@
 <#
+Recurring out of office script, define a day where the scripts responds with an out of office message to every mail you get.
+
+1. Just run it to create the settings file.
+2. Fill in the needed information
+3. Run it again to save your passwords encrypted to your disk.
+4. Set it as a scheduled task
+5. Enjoy your day off
+
 Prerequisites:
 -Microsoft Exchange Web Services Managed API 2.2
 -Userrights to create a scheduled Task
