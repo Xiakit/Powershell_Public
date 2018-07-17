@@ -1,0 +1,28 @@
+﻿Name;Kcal;Protein;Fett;Kohlenhydrate;Energiedichte;Art;Beilage;Laziness;Snackable
+Rinderfilet;107;20;3;0;1.1;Fleisch;Nein;2;Nein
+Lammfleisch;191;14;15;0;1.91;Fleisch;Nein;2;Nein
+Hähnchenbrust;116;20;4;0;1.2;Fleisch;Nein;2;Nein
+Eier;155;11;11;1.1;1.5;Ei;Nein;2;Nein
+Schweinefilet;116;20;4;0;1.16;Fleisch;Nein;2;Nein
+Pferdefleisch;103;19;3;0;1;Fleisch;Nein;2;Nein
+Hähnchen;161;20;9;0;1.6;Fleisch;Nein;2;Nein
+Forelle geräuchert;121;19;5;0;1.2;Fisch;Nein;2;Ja
+Lachs;188;20;12;0;1.9;Fisch;Nein;2;Nein
+Brokkoli;34;4;0.2;2.9;0.3;Gemüse;Ja;2;Nein
+Zucchini;22;3;0;2;0.2;Gemüse;Ja;2;Nein
+Eisbergsalat;7;0.5;0;0.7;0.1;Gemüse;Ja;2;Nein
+Champignons;19;3;0;0.8;0.2;Gemüse;Ja;1;Nein
+Chinakohl;13;0.7;0.3;0.8;0.1;Gemüse;Ja;1;Nein
+Feldsalat;14;2.1;0;0.8;0.1;Gemüse;Ja;2;Nein
+Kopfsalat;12;1;0;1;0.1;Gemüse;Ja;2;Nein
+Spargel;21;1.9;0.2;2.8;0.2;Gemüse;Ja;1;Nein
+Fenchel;33;2.4;0.5;2.8;0.3;Gemüse;Ja;1;Ja
+Gurke;12;1;0;2;0.1;Gemüse;Ja;2;Ja
+Spinat;27;2;0.8;2;0.3;Gemüse;Ja;2;Nein
+Tomate;24;1;0.3;4;0.2;Gemüse;Ja;2;Nein
+Rosenkohl;43;3.4;0.4;4.4;0.4;Gemüse;Ja;1;Nein
+Blumenkohl;25;3;0;2;0.3;Gemüse;Ja;1;Nein
+Grüne Bohnen;32;2;0;5;0.3;Gemüse;Ja;1;Nein
+Parmesan Käse;390;30;30;0;3.9;Milchprodukt;Ja;3;Ja
+Karotten;31;0.9;0.1;4.7;0.3;Gemüse;Ja;2;Ja
+Hüttenkäse Hirz;102;11.9;4.2;4.1;0.9;Milchprodukt;Ja;3;Ja
